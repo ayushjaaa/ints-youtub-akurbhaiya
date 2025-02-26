@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import config from "../config/config";
+import config from "../config/config.js";
+
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
@@ -30,24 +31,35 @@ const userSchema = new mongoose.Schema({
     type: String,
   },
 });
-userSchema.method.geneateToken = function () {
-  const token =  jwt.sign(
-    { _id: this._id, username: this.username, email: this.email },
-    config.JWT_SECRET,
-    {
-      expiresIn: config.JWT_EXPIRES_IN,
+userSchema.methods.generateToken = function () {
+    return jwt.sign(
+      { _id: this._id, username: this.username, email: this.email },
+      config.JWT_SECRET,
+      { expiresIn: config.JWT_EXPIRES_IN } // Ensure this is a valid value
+    );
+  };
+  
+userSchema.statics.verifyToken = function (token){
+    if(!token){
+throw new Error("token is required")
     }
-  );
-  return token
-};
-
+    return jwt.verify(token,config.JWT_SECRET)
+}
 userSchema.statics.hasPassword = async function name(password) {
+    if(!password){
+        throw new Error("password is required")
+    }
   const salt = await bcrypt.genSalt(10);
   return bcrypt.hash(password, 10);
 };
-userSchema.methods.comaprePassword = async function name(password) {
+userSchema.methods.comaprePassword = async function (password) {
+    if(!password){
+        throw new Error('password is required')
+    }
+    if(!this.password){
+        throw new Error('password is required')
+    }
   return bcrypt.compare(password, this.password);
 };
-
-const useModel = mongoose.model("user", userSchema);
-const user = useModel.findOne();
+const userModel = mongoose.model('user',userSchema)
+export default userModel 
